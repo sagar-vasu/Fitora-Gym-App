@@ -1,17 +1,16 @@
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ArrowUpRight } from 'lucide-react-native';
 
 import { AppText } from '../../../components/ui/AppText';
 import { colors, radius, spacing } from '../../../theme';
-
-import { ExerciseThumbnail } from './ExerciseThumbnail';
-import { label } from '../services/exerciseCatalog';
+import { ExerciseImage } from './ExerciseImage';
+import { formatLabel } from '../services/exerciseCatalog';
 import type { Exercise } from '../types/exercise';
 
 type Props = {
   exercise: Exercise;
-  onPress: () => void;
+  onPress: (exercise: Exercise) => void;
 };
 
 export const ExerciseCard = memo(function ExerciseCard({
@@ -20,33 +19,38 @@ export const ExerciseCard = memo(function ExerciseCard({
 }: Props) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => onPress(exercise)}
       accessibilityRole="button"
-      accessibilityLabel={`View exercise: ${exercise.name}`}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.72 }]}
+      accessibilityLabel={`View ${exercise.name} details`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.78 }]}
     >
-      <View style={styles.thumb}>
-        <ExerciseThumbnail exercise={exercise} />
-      </View>
+      <ExerciseImage exercise={exercise} style={styles.image} />
 
-      <View style={styles.body}>
-        <AppText weight="700" numberOfLines={2}>
+      <View style={styles.content}>
+        <AppText weight="700" numberOfLines={2} style={styles.name}>
           {exercise.name}
         </AppText>
 
         <AppText variant="small" color={colors.textSecondary} numberOfLines={1}>
-          {exercise.primaryMuscles.map(label).join(', ') ||
-            'Muscles not specified'}
+          {exercise.primaryMuscles.map(formatLabel).join(', ') ||
+            'Muscles unspecified'}
         </AppText>
 
-        <AppText variant="caption" color={colors.primary} numberOfLines={1}>
-          {label(exercise.level)}
-          {' · '}
-          {label(exercise.equipment)}
-        </AppText>
+        <View style={styles.footer}>
+          <AppText
+            variant="caption"
+            color={colors.primary}
+            numberOfLines={1}
+            style={styles.meta}
+          >
+            {formatLabel(exercise.equipment)}
+            {' · '}
+            {formatLabel(exercise.level)}
+          </AppText>
+
+          <ArrowUpRight size={19} color={colors.primary} />
+        </View>
       </View>
-
-      <ChevronRight size={18} color={colors.textSecondary} />
     </Pressable>
   );
 });
@@ -54,22 +58,37 @@ export const ExerciseCard = memo(function ExerciseCard({
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.surface,
-    padding: spacing.sm,
-    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
     marginBottom: spacing.sm,
-    minHeight: 116,
+    minHeight: 126,
+    alignItems: 'center',
   },
-  thumb: {
-    width: 92,
+  image: {
+    width: 98,
+    height: 102,
   },
-  body: {
+  content: {
     flex: 1,
-    gap: 5,
     minWidth: 0,
+    gap: spacing.xs,
+  },
+  name: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  meta: {
+    flex: 1,
   },
 });

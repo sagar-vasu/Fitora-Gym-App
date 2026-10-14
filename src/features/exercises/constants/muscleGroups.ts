@@ -1,0 +1,31 @@
+export const MUSCLE_GROUPS = [
+  { id: 'all', label: 'All', muscles: [] },
+  { id: 'chest', label: 'Chest', muscles: ['chest'] },
+  {
+    id: 'back',
+    label: 'Back',
+    muscles: ['lats', 'middle back', 'lower back', 'traps'],
+  },
+  { id: 'shoulders', label: 'Shoulders', muscles: ['shoulders'] },
+  { id: 'biceps', label: 'Biceps', muscles: ['biceps'] },
+  { id: 'triceps', label: 'Triceps', muscles: ['triceps'] },
+  { id: 'forearms', label: 'Forearms', muscles: ['forearms'] },
+  { id: 'core', label: 'Core', muscles: ['abdominals'] },
+  {
+    id: 'legs',
+    label: 'Legs',
+    muscles: [
+      'quadriceps',
+      'hamstrings',
+      'glutes',
+      'calves',
+      'adductors',
+      'abductors',
+    ],
+  },
+  { id: 'quads', label: 'Quads', muscles: ['quadriceps'] },
+  { id: 'glutes', label: 'Glutes', muscles: ['glutes'] },
+  { id: 'hamstrings', label: 'Hamstrings', muscles: ['hamstrings'] },
+  { id: 'calves', label: 'Calves', muscles: ['calves'] },
+  { id: 'neck', label: 'Neck', muscles: ['neck'] },
+] as const;

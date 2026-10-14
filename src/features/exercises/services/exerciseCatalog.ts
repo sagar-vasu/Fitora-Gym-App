@@ -1,10 +1,19 @@
-import raw from '../../../data/exercises.json';
-import type { Exercise, ExerciseFilters } from '../types/exercise';
+import rawData from '../../../data/exercises.json';
+import { MUSCLE_GROUPS } from '../constants/muscleGroups';
+import {
+  DEFAULT_FILTERS,
+  type Exercise,
+  type ExerciseFilters,
+  type FilterOption,
+} from '../types/exercise';
 
-const str = (value: unknown): string =>
+const normalize = (value: string) =>
+  value.trim().toLowerCase().replace(/\s+/g, ' ');
+
+const text = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
 
-const arr = (value: unknown): string[] =>
+const strings = (value: unknown): string[] =>
   Array.isArray(value)
     ? value
         .filter((v): v is string => typeof v === 'string')
@@ -12,209 +21,118 @@ const arr = (value: unknown): string[] =>
         .filter(Boolean)
     : [];
 
-const unique = (values: string[]): string[] => Array.from(new Set(values));
+function parseRecord(value: unknown): Exercise | null {
+  if (!value || typeof value !== 'object') return null;
 
-const normalize = (value: string): string =>
-  value.trim().toLocaleLowerCase('en-US').replace(/\s+/g, ' ');
+  const row = value as Record<string, unknown>;
+  const id = text(row.id);
+  const name = text(row.name);
 
-function parseExercise(record: unknown, index: number): Exercise | null {
-  if (!record || typeof record !== 'object') {
-    return null;
-  }
-
-  const r = record as Record<string, unknown>;
-  const name = str(r.name);
-
-  if (!name) {
-    return null;
-  }
-
-  // Stable for this pinned dataset snapshot.
-  const id =
-    str(r.id) ||
-    `missing-id-${index}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  // Reject records that cannot safely be linked by ID.
+  if (!id || !name) return null;
 
   return {
     id,
     name,
-    level: str(r.level) || 'unspecified',
-    category: str(r.category) || 'unspecified',
-    force: str(r.force) || null,
-    mechanic: str(r.mechanic) || null,
-    equipment: str(r.equipment) || null,
-    primaryMuscles: unique(arr(r.primaryMuscles).map(normalize)),
-    secondaryMuscles: unique(arr(r.secondaryMuscles).map(normalize)),
-    instructions: arr(r.instructions),
-    images: arr(r.images),
+    level: text(row.level) || 'unspecified',
+    category: text(row.category) || 'unspecified',
+    equipment: text(row.equipment) || null,
+    force: text(row.force) || null,
+    mechanic: text(row.mechanic) || null,
+    primaryMuscles: strings(row.primaryMuscles).map(normalize),
+    secondaryMuscles: strings(row.secondaryMuscles).map(normalize),
+    instructions: strings(row.instructions),
+    images: strings(row.images),
   };
 }
 
-const rawRows: unknown[] = Array.isArray(raw) ? raw : [];
+const rows: unknown[] = Array.isArray(rawData) ? rawData : [];
+const seenIds = new Set<string>();
 
-const seen = new Set<string>();
-
-export const exerciseCatalog: Exercise[] = rawRows
-  .flatMap((row, index) => {
-    const result = parseExercise(row, index);
-
-    if (!result || seen.has(result.id)) {
-      return [];
-    }
-
-    seen.add(result.id);
-    return [result];
+export const EXERCISES: Exercise[] = rows
+  .map(parseRecord)
+  .filter((item): item is Exercise => {
+    if (!item || seenIds.has(item.id)) return false;
+    seenIds.add(item.id);
+    return true;
   })
   .sort((a, b) => a.name.localeCompare(b.name));
 
-const byId = new Map(exerciseCatalog.map(ex => [ex.id, ex]));
+const index = new Map(EXERCISES.map(item => [item.id, item]));
 
-export const findExercise = (id: string): Exercise | undefined => byId.get(id);
+export function getExercise(id: string) {
+  return index.get(id);
+}
 
-// UI groups are NOT literal dataset muscle values.
+export function formatLabel(value: string | null | undefined) {
+  if (!value || value === 'unspecified') return 'Not specified';
+  if (value === 'body only') return 'Bodyweight';
 
-export const MUSCLE_GROUPS: ReadonlyArray<{
-  key: string;
-  title: string;
-  muscles: readonly string[];
-}> = [
-  {
-    key: 'all',
-    title: 'All',
-    muscles: [],
-  },
-  {
-    key: 'chest',
-    title: 'Chest',
-    muscles: ['chest'],
-  },
-  {
-    key: 'back',
-    title: 'Back',
-    muscles: ['lats', 'middle back', 'lower back', 'traps'],
-  },
-  {
-    key: 'shoulders',
-    title: 'Shoulders',
-    muscles: ['shoulders'],
-  },
-  {
-    key: 'biceps',
-    title: 'Biceps',
-    muscles: ['biceps'],
-  },
-  {
-    key: 'triceps',
-    title: 'Triceps',
-    muscles: ['triceps'],
-  },
-  {
-    key: 'forearms',
-    title: 'Forearms',
-    muscles: ['forearms'],
-  },
-  {
-    key: 'core',
-    title: 'Core',
-    muscles: ['abdominals'],
-  },
-  {
-    key: 'quads',
-    title: 'Quads',
-    muscles: ['quadriceps'],
-  },
-  {
-    key: 'hamstrings',
-    title: 'Hamstrings',
-    muscles: ['hamstrings'],
-  },
-  {
-    key: 'glutes',
-    title: 'Glutes',
-    muscles: ['glutes'],
-  },
-  {
-    key: 'calves',
-    title: 'Calves',
-    muscles: ['calves'],
-  },
-  {
-    key: 'adductors',
-    title: 'Adductors',
-    muscles: ['adductors'],
-  },
-  {
-    key: 'abductors',
-    title: 'Abductors',
-    muscles: ['abductors'],
-  },
-  {
-    key: 'neck',
-    title: 'Neck',
-    muscles: ['neck'],
-  },
-];
+  return value.replace(/\b\w/g, char => char.toUpperCase());
+}
 
-const groups = new Map(MUSCLE_GROUPS.map(g => [g.key, new Set(g.muscles)]));
+export function getFilterOptions(
+  field: 'equipment' | 'level' | 'category',
+): FilterOption[] {
+  const options = new Set(EXERCISES.map(ex => ex[field] || 'none'));
 
-export const optionsFor = (key: 'equipment' | 'level' | 'category'): string[] =>
-  unique(exerciseCatalog.map(ex => ex[key] || 'none')).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  return [
+    { label: 'Any', value: 'all' },
+    ...Array.from(options)
+      .sort()
+      .map(value => ({
+        label: value === 'none' ? 'None specified' : formatLabel(value),
+        value,
+      })),
+  ];
+}
 
-export function filterExercises(filters: ExerciseFilters): Exercise[] {
-  const words = normalize(filters.search).split(' ').filter(Boolean);
+export function filterExercises(
+  filters: ExerciseFilters = DEFAULT_FILTERS,
+): Exercise[] {
+  const queryWords = normalize(filters.search).split(' ').filter(Boolean);
 
-  const groupMuscles = groups.get(filters.group);
+  const group = MUSCLE_GROUPS.find(g => g.id === filters.muscle);
+  const targetMuscles = new Set<string>(group?.muscles ?? []);
 
-  return exerciseCatalog.filter(ex => {
-    // Muscle group filtering
-    if (filters.group !== 'all') {
-      if (!groupMuscles) {
-        return false;
-      }
+  return EXERCISES.filter(ex => {
+    if (filters.muscle !== 'all') {
+      if (!group) return false;
 
       const muscles = filters.includeSecondary
         ? [...ex.primaryMuscles, ...ex.secondaryMuscles]
         : ex.primaryMuscles;
 
-      if (!muscles.some(m => groupMuscles.has(m))) {
+      if (!muscles.some(muscle => targetMuscles.has(muscle))) {
         return false;
       }
     }
 
-    // Equipment
     if (
       filters.equipment !== 'all' &&
       (ex.equipment || 'none') !== filters.equipment
-    ) {
+    )
       return false;
-    }
 
-    // Difficulty
     if (filters.level !== 'all' && ex.level !== filters.level) {
       return false;
     }
 
-    // Category
-    if (filters.category !== 'all' && ex.category !== filters.category) {
+    if (filters.category !== 'all' && ex.category !== filters.category)
       return false;
-    }
 
-    // Multiword text search
-    if (words.length) {
-      const haystack = normalize(
+    if (queryWords.length > 0) {
+      const searchable = normalize(
         [
           ex.name,
-          ex.equipment,
+          ex.equipment || '',
           ex.category,
           ...ex.primaryMuscles,
           ...ex.secondaryMuscles,
-        ]
-          .filter(Boolean)
-          .join(' '),
+        ].join(' '),
       );
 
-      if (!words.every(word => haystack.includes(word))) {
+      if (!queryWords.every(word => searchable.includes(word))) {
         return false;
       }
     }
@@ -223,45 +141,22 @@ export function filterExercises(filters: ExerciseFilters): Exercise[] {
   });
 }
 
-const MEDIA_BASE =
+// Development asset source. Pin and host reviewed media for release.
+const IMAGE_BASE =
   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
-export function imageUrl(ex: Exercise, index = 0): string | undefined {
-  const relativePath = ex.images[index];
+export function getExerciseImage(
+  exercise: Exercise,
+  imageIndex = 0,
+): string | undefined {
+  const path = exercise.images[imageIndex];
+  if (!path) return undefined;
 
-  if (!relativePath) {
+  const parts = path.replace(/\\/g, '/').split('/');
+
+  if (parts.some(part => !part || part === '.' || part === '..')) {
     return undefined;
   }
 
-  // Prevent accidental absolute or traversal paths.
-  const pieces = relativePath.replace(/\\/g, '/').split('/');
-
-  if (pieces.some(part => !part || part === '.' || part === '..')) {
-    return undefined;
-  }
-
-  return MEDIA_BASE + pieces.map(encodeURIComponent).join('/');
+  return IMAGE_BASE + parts.map(encodeURIComponent).join('/');
 }
-
-export function label(value: string | null | undefined): string {
-  if (!value || value === 'none' || value === 'unspecified') {
-    return 'Not specified';
-  }
-
-  if (value === 'body only') {
-    return 'Bodyweight';
-  }
-
-  return value.replace(/\b\w/g, c => c.toUpperCase());
-}
-
-export const catalogStats = {
-  rawRows: rawRows.length,
-  validRows: exerciseCatalog.length,
-  withoutImages: exerciseCatalog.filter(e => e.images.length === 0).length,
-  withoutInstructions: exerciseCatalog.filter(e => e.instructions.length === 0)
-    .length,
-  withoutPrimaryMuscles: exerciseCatalog.filter(
-    e => e.primaryMuscles.length === 0,
-  ).length,
-};

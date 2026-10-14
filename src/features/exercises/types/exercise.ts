@@ -4,9 +4,9 @@ export type Exercise = {
   name: string;
   level: string;
   category: string;
+  equipment: string | null;
   force: string | null;
   mechanic: string | null;
-  equipment: string | null;
   primaryMuscles: string[];
   secondaryMuscles: string[];
   instructions: string[];
@@ -15,18 +15,23 @@ export type Exercise = {
 
 export type ExerciseFilters = {
   search: string;
-  group: string;
+  muscle: string;
   equipment: string;
   level: string;
   category: string;
   includeSecondary: boolean;
 };
 
-export const DEFAULT_EXERCISE_FILTERS: ExerciseFilters = {
+export const DEFAULT_FILTERS: ExerciseFilters = {
   search: '',
-  group: 'all',
+  muscle: 'all',
   equipment: 'all',
   level: 'all',
   category: 'all',
   includeSecondary: false,
+};
+
+export type FilterOption = {
+  label: string;
+  value: string;
 };
