@@ -1,228 +1,254 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Search, X, Dumbbell } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import type { CompositeScreenProps } from '@react-navigation/native';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Target, Info } from 'lucide-react-native';
 
-import { Screen } from '../../../components/layout/Screen';
 import { AppText } from '../../../components/ui/AppText';
-import { AppCard } from '../../../components/ui/AppCard';
+import { colors, spacing, radius } from '../../../theme';
 
-import { colors, radius, spacing } from '../../../theme';
-import { getExercise, formatLabel } from '../services/exerciseCatalog';
-import { ExerciseGallery } from '../components/ExerciseGallery';
+import { ExerciseCard } from '../components/ExerciseCard';
+import { MuscleSelector } from '../components/MuscleSelector';
+import { FilterSheet } from '../components/FilterSheet';
+import { useExerciseFilters } from '../hooks/useExerciseFilters';
 
-import type { RootStackParamList } from '../../../app/navigation/types';
+import type { Exercise } from '../types/exercise';
+import type {
+  MainTabParamList,
+  RootStackParamList,
+} from '../../../app/navigation/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'ExerciseDetail'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Train'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
-function Tag({ text }: { text: string }) {
-  return (
-    <View style={styles.tag}>
-      <AppText variant="small" weight="600" color={colors.primary}>
-        {text}
-      </AppText>
-    </View>
+export function ExerciseLibraryScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const { filters, setFilters, update, reset, results, advancedCount } =
+    useExerciseFilters();
+
+  const openDetail = useCallback(
+    (exercise: Exercise) =>
+      navigation.navigate('ExerciseDetail', {
+        exerciseId: exercise.id,
+      }),
+    [navigation],
   );
-}
 
-function MetadataRow({ title, value }: { title: string; value: string }) {
-  return (
-    <View style={styles.metadataRow}>
-      <AppText color={colors.textSecondary} variant="small">
-        {title}
-      </AppText>
-
-      <AppText variant="small" weight="600" style={styles.metadataValue}>
-        {value}
-      </AppText>
-    </View>
+  const renderItem = useCallback(
+    ({ item }: { item: Exercise }) => (
+      <ExerciseCard exercise={item} onPress={openDetail} />
+    ),
+    [openDetail],
   );
-}
-
-export function ExerciseDetailScreen({ route }: Props) {
-  const exercise = getExercise(route.params.exerciseId);
-
-  if (!exercise) {
-    return (
-      <Screen scroll>
-        <AppText variant="title" weight="700">
-          Exercise not found
-        </AppText>
-        <AppText color={colors.textSecondary}>
-          This exercise is unavailable in the current catalog.
-        </AppText>
-      </Screen>
-    );
-  }
-
-  const primary =
-    exercise.primaryMuscles.map(formatLabel).join(', ') || 'Not specified';
-
-  const secondary =
-    exercise.secondaryMuscles.map(formatLabel).join(', ') || 'None listed';
 
   return (
-    <Screen scroll>
-      <ExerciseGallery exercise={exercise} />
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <AppText
+              variant="caption"
+              weight="700"
+              color={colors.textSecondary}
+            >
+              YOUR MOVEMENT LIBRARY
+            </AppText>
 
-      <View style={styles.heading}>
-        <AppText variant="caption" weight="700" color={colors.success}>
-          {formatLabel(exercise.category).toUpperCase()}
-        </AppText>
+            <AppText
+              variant="heading"
+              weight="700"
+              style={{ marginTop: spacing.xs }}
+            >
+              Exercises
+            </AppText>
+          </View>
 
-        <AppText variant="heading" weight="700" style={styles.title}>
-          {exercise.name}
-        </AppText>
-
-        <View style={styles.tags}>
-          <Tag text={formatLabel(exercise.level)} />
-          <Tag text={formatLabel(exercise.equipment)} />
-          {exercise.mechanic && <Tag text={formatLabel(exercise.mechanic)} />}
+          <View style={styles.icon}>
+            <Dumbbell size={23} color={colors.primary} />
+          </View>
         </View>
-      </View>
 
-      <AppCard style={styles.section}>
-        <View style={styles.sectionHeading}>
-          <Target size={21} color={colors.primary} />
-          <AppText variant="title" weight="700">
-            Muscles worked
+        <View style={styles.search}>
+          <Search size={20} color={colors.textSecondary} />
+
+          <TextInput
+            value={filters.search}
+            onChangeText={value => update('search', value)}
+            placeholder="Search exercises..."
+            placeholderTextColor={colors.textSecondary}
+            accessibilityLabel="Search exercise library"
+            returnKeyType="search"
+            style={styles.input}
+          />
+
+          {filters.search.length > 0 && (
+            <Pressable
+              onPress={() => update('search', '')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
+              <X size={20} color={colors.textSecondary} />
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.sectionRow}>
+          <AppText weight="700">Focus area</AppText>
+          <AppText variant="caption" color={colors.textSecondary}>
+            Choose a muscle group
           </AppText>
         </View>
 
-        <MetadataRow title="Primary" value={primary} />
-        <MetadataRow title="Secondary" value={secondary} />
-      </AppCard>
-
-      <AppCard style={styles.section}>
-        <AppText variant="title" weight="700">
-          Exercise overview
-        </AppText>
-
-        <MetadataRow
-          title="Equipment"
-          value={formatLabel(exercise.equipment)}
+        <MuscleSelector
+          selected={filters.muscle}
+          onChange={value => update('muscle', value)}
         />
-        <MetadataRow title="Difficulty" value={formatLabel(exercise.level)} />
-        <MetadataRow title="Category" value={formatLabel(exercise.category)} />
-        <MetadataRow title="Movement" value={formatLabel(exercise.mechanic)} />
-        <MetadataRow title="Force" value={formatLabel(exercise.force)} />
-      </AppCard>
 
-      <View style={styles.instructions}>
-        <AppText variant="title" weight="700">
-          How to perform
-        </AppText>
+        <View style={styles.resultsRow}>
+          <View style={{ flex: 1 }}>
+            <AppText weight="700">{results.length} exercises</AppText>
+            <AppText variant="caption" color={colors.textSecondary}>
+              Explore and learn proper technique
+            </AppText>
+          </View>
 
-        <AppText
-          variant="small"
-          color={colors.textSecondary}
-          style={{ marginTop: spacing.xs }}
-        >
-          Follow each step with control.
-        </AppText>
+          <FilterSheet applied={filters} onApply={setFilters} />
+        </View>
 
-        {exercise.instructions.length ? (
-          exercise.instructions.map((instruction, index) => (
-            <View style={styles.step} key={index}>
-              <View style={styles.stepNumber}>
-                <AppText weight="700" color={colors.textInverse}>
-                  {index + 1}
-                </AppText>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <AppText>{instruction}</AppText>
-              </View>
-            </View>
-          ))
-        ) : (
-          <AppText
-            color={colors.textSecondary}
-            style={{ marginTop: spacing.md }}
+        {advancedCount > 0 && (
+          <Pressable
+            onPress={reset}
+            accessibilityRole="button"
+            style={styles.clear}
           >
-            Instructions are not available for this exercise.
-          </AppText>
+            <AppText variant="small" color={colors.primary} weight="700">
+              Clear filters
+            </AppText>
+          </Pressable>
         )}
       </View>
 
-      <View style={styles.note}>
-        <Info size={18} color={colors.textSecondary} />
-        <View style={{ flex: 1 }}>
-          <AppText variant="small" color={colors.textSecondary}>
-            Exercise descriptions are educational and should be reviewed by
-            qualified trainers before being treated as personalized technique
-            advice.
-          </AppText>
-        </View>
-      </View>
-    </Screen>
+      <FlatList
+        data={results}
+        keyExtractor={item => item.id}
+        renderItem={renderItem}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Search size={34} color={colors.textSecondary} />
+
+            <AppText variant="title" weight="700">
+              No exercises found
+            </AppText>
+
+            <AppText
+              color={colors.textSecondary}
+              style={{ textAlign: 'center' }}
+            >
+              Try another name or remove some filters.
+            </AppText>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={reset}
+              style={styles.resetButton}
+            >
+              <AppText color={colors.textInverse} weight="700">
+                Reset filters
+              </AppText>
+            </Pressable>
+          </View>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    marginTop: spacing.xl,
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  title: {
-    marginTop: spacing.xs,
+  header: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
   },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-  },
-  tag: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  section: {
-    marginTop: spacing.xl,
-  },
-  sectionHeading: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
-  metadataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  metadataValue: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  instructions: {
-    marginTop: spacing.xxxl,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginTop: spacing.xl,
-  },
-  stepNumber: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.primary,
+  icon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  note: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
+  search: {
+    marginTop: spacing.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.xxxl,
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+    minHeight: 54,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    paddingVertical: spacing.sm,
+  },
+  sectionRow: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resultsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  clear: {
+    alignSelf: 'flex-end',
+    paddingVertical: spacing.xs,
+  },
+  list: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    flexGrow: 1,
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: spacing.md,
+  },
+  resetButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
   },
 });

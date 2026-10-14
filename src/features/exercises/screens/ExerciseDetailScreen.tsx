@@ -1,195 +1,211 @@
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Target, Info } from 'lucide-react-native';
 
-import { AppText } from '../../../components/ui/AppText';
 import { Screen } from '../../../components/layout/Screen';
+import { AppText } from '../../../components/ui/AppText';
 import { AppCard } from '../../../components/ui/AppCard';
 
 import { colors, radius, spacing } from '../../../theme';
+import { getExercise, formatLabel } from '../services/exerciseCatalog';
+import { ExerciseGallery } from '../components/ExerciseGallery';
 
 import type { RootStackParamList } from '../../../app/navigation/types';
 
-import { findExercise, label } from '../services/exerciseCatalog';
-
-import { ExerciseThumbnail } from '../components/ExerciseThumbnail';
-
 type Props = NativeStackScreenProps<RootStackParamList, 'ExerciseDetail'>;
 
-export function ExerciseDetailScreen({ route }: Props) {
-  const exercise = findExercise(route.params.exerciseId);
+function Tag({ text }: { text: string }) {
+  return (
+    <View style={styles.tag}>
+      <AppText variant="small" weight="600" color={colors.primary}>
+        {text}
+      </AppText>
+    </View>
+  );
+}
 
-  const [imageIndex, setImageIndex] = useState(0);
+function MetadataRow({ title, value }: { title: string; value: string }) {
+  return (
+    <View style={styles.metadataRow}>
+      <AppText color={colors.textSecondary} variant="small">
+        {title}
+      </AppText>
+
+      <AppText variant="small" weight="600" style={styles.metadataValue}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
+export function ExerciseDetailScreen({ route }: Props) {
+  const exercise = getExercise(route.params.exerciseId);
 
   if (!exercise) {
     return (
       <Screen scroll>
         <AppText variant="title" weight="700">
-          Exercise unavailable
+          Exercise not found
         </AppText>
-
         <AppText color={colors.textSecondary}>
-          This exercise could not be found in the current catalog.
+          This exercise is unavailable in the current catalog.
         </AppText>
       </Screen>
     );
   }
 
+  const primary =
+    exercise.primaryMuscles.map(formatLabel).join(', ') || 'Not specified';
+
+  const secondary =
+    exercise.secondaryMuscles.map(formatLabel).join(', ') || 'None listed';
+
   return (
     <Screen scroll>
-      <ExerciseThumbnail
-        exercise={exercise}
-        imageIndex={imageIndex}
-        height={285}
-      />
+      <ExerciseGallery exercise={exercise} />
 
-      {exercise.images.length > 1 && (
-        <View style={styles.pager}>
-          {exercise.images.map((_, index) => (
-            <Pressable
-              key={index}
-              accessibilityRole="button"
-              accessibilityLabel={`View exercise image ${index + 1}`}
-              accessibilityState={{
-                selected: index === imageIndex,
-              }}
-              onPress={() => setImageIndex(index)}
-              style={[styles.dot, index === imageIndex && styles.selectedDot]}
-            />
-          ))}
+      <View style={styles.heading}>
+        <AppText variant="caption" weight="700" color={colors.success}>
+          {formatLabel(exercise.category).toUpperCase()}
+        </AppText>
+
+        <AppText variant="heading" weight="700" style={styles.title}>
+          {exercise.name}
+        </AppText>
+
+        <View style={styles.tags}>
+          <Tag text={formatLabel(exercise.level)} />
+          <Tag text={formatLabel(exercise.equipment)} />
+          {exercise.mechanic && <Tag text={formatLabel(exercise.mechanic)} />}
         </View>
-      )}
-
-      <AppText variant="heading" weight="700" style={styles.title}>
-        {exercise.name}
-      </AppText>
-
-      <View style={styles.pills}>
-        {[exercise.level, exercise.category, exercise.equipment || 'none'].map(
-          (value, index) => (
-            <View key={`${index}-${value}`} style={styles.pill}>
-              <AppText variant="small" color={colors.primary} weight="600">
-                {label(value)}
-              </AppText>
-            </View>
-          ),
-        )}
       </View>
 
       <AppCard style={styles.section}>
-        <AppText variant="title" weight="700">
-          Muscles worked
-        </AppText>
+        <View style={styles.sectionHeading}>
+          <Target size={21} color={colors.primary} />
+          <AppText variant="title" weight="700">
+            Muscles worked
+          </AppText>
+        </View>
 
-        <AppText style={styles.spacing}>
-          Primary:{' '}
-          {exercise.primaryMuscles.map(label).join(', ') || 'Not specified'}
-        </AppText>
-
-        <AppText color={colors.textSecondary}>
-          Secondary:{' '}
-          {exercise.secondaryMuscles.map(label).join(', ') || 'None listed'}
-        </AppText>
+        <MetadataRow title="Primary" value={primary} />
+        <MetadataRow title="Secondary" value={secondary} />
       </AppCard>
 
       <AppCard style={styles.section}>
         <AppText variant="title" weight="700">
-          Movement details
+          Exercise overview
         </AppText>
 
-        <AppText style={styles.spacing}>
-          Equipment: {label(exercise.equipment)}
-        </AppText>
-
-        <AppText>Difficulty: {label(exercise.level)}</AppText>
-
-        <AppText>Category: {label(exercise.category)}</AppText>
-
-        <AppText>Force: {label(exercise.force)}</AppText>
-
-        <AppText>Mechanic: {label(exercise.mechanic)}</AppText>
+        <MetadataRow
+          title="Equipment"
+          value={formatLabel(exercise.equipment)}
+        />
+        <MetadataRow title="Difficulty" value={formatLabel(exercise.level)} />
+        <MetadataRow title="Category" value={formatLabel(exercise.category)} />
+        <MetadataRow title="Movement" value={formatLabel(exercise.mechanic)} />
+        <MetadataRow title="Force" value={formatLabel(exercise.force)} />
       </AppCard>
 
-      <AppText variant="title" weight="700" style={styles.section}>
-        How to perform
-      </AppText>
-
-      {exercise.instructions.length > 0 ? (
-        exercise.instructions.map((instruction, index) => (
-          <View key={index} style={styles.step}>
-            <View style={styles.stepNumber}>
-              <AppText weight="700" color={colors.textInverse}>
-                {index + 1}
-              </AppText>
-            </View>
-
-            <View style={styles.flex}>
-              <AppText>{instruction}</AppText>
-            </View>
-          </View>
-        ))
-      ) : (
-        <AppText color={colors.textSecondary}>
-          Instructions are not available for this movement.
+      <View style={styles.instructions}>
+        <AppText variant="title" weight="700">
+          How to perform
         </AppText>
-      )}
 
-      <AppText
-        variant="caption"
-        color={colors.textSecondary}
-        style={styles.disclaimer}
-      >
-        Educational exercise information. Technique guidance may require review
-        by a qualified trainer.
-      </AppText>
+        <AppText
+          variant="small"
+          color={colors.textSecondary}
+          style={{ marginTop: spacing.xs }}
+        >
+          Follow each step with control.
+        </AppText>
+
+        {exercise.instructions.length ? (
+          exercise.instructions.map((instruction, index) => (
+            <View style={styles.step} key={index}>
+              <View style={styles.stepNumber}>
+                <AppText weight="700" color={colors.textInverse}>
+                  {index + 1}
+                </AppText>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <AppText>{instruction}</AppText>
+              </View>
+            </View>
+          ))
+        ) : (
+          <AppText
+            color={colors.textSecondary}
+            style={{ marginTop: spacing.md }}
+          >
+            Instructions are not available for this exercise.
+          </AppText>
+        )}
+      </View>
+
+      <View style={styles.note}>
+        <Info size={18} color={colors.textSecondary} />
+        <View style={{ flex: 1 }}>
+          <AppText variant="small" color={colors.textSecondary}>
+            Exercise descriptions are educational and should be reviewed by
+            qualified trainers before being treated as personalized technique
+            advice.
+          </AppText>
+        </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  heading: {
+    marginTop: spacing.xl,
+  },
   title: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xs,
   },
-  section: {
-    marginTop: spacing.xl,
-  },
-  spacing: {
-    marginTop: spacing.md,
-  },
-  pager: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: spacing.sm,
-  },
-  dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: colors.border,
-  },
-  selectedDot: {
-    backgroundColor: colors.primary,
-    width: 24,
-  },
-  pills: {
+  tags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
     marginTop: spacing.md,
   },
-  pill: {
+  tag: {
     backgroundColor: colors.primarySoft,
     borderRadius: radius.pill,
-    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  section: {
+    marginTop: spacing.xl,
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  metadataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  metadataValue: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  instructions: {
+    marginTop: spacing.xxxl,
   },
   step: {
     flexDirection: 'row',
-    gap: spacing.md,
     alignItems: 'flex-start',
-    marginTop: spacing.lg,
+    gap: spacing.md,
+    marginTop: spacing.xl,
   },
   stepNumber: {
     width: 34,
@@ -199,10 +215,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flex: {
-    flex: 1,
-  },
-  disclaimer: {
+  note: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     marginTop: spacing.xxxl,
     marginBottom: spacing.xl,
   },

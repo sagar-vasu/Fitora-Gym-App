@@ -12,6 +12,7 @@ import { MainTabParamList } from './types';
 import { colors } from '../../theme';
 import { TodayScreen } from '../../features/dashboard/screens/TodayScreen';
 import {ExerciseLibraryScreen} from '../../features/exercises/screens/ExerciseLibraryScreen';
+
 import { FeaturePlaceholder } from '../../components/ui/FeaturePlaceholder';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
