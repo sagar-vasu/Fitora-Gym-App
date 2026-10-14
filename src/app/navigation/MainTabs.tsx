@@ -11,6 +11,7 @@ import {
 import { MainTabParamList } from './types';
 import { colors } from '../../theme';
 import { TodayScreen } from '../../features/dashboard/screens/TodayScreen';
+import {ExerciseLibraryScreen} from '../../features/exercises/screens/ExerciseLibraryScreen';
 import { FeaturePlaceholder } from '../../components/ui/FeaturePlaceholder';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -81,7 +82,7 @@ export function MainTabs() {
       })}
     >
       <Tab.Screen name="Today" component={TodayScreen} />
-      <Tab.Screen name="Train" component={TrainScreen} />
+      <Tab.Screen name="Train" component={ExerciseLibraryScreen} />
       <Tab.Screen name="Nutrition" component={NutritionScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="You" component={YouScreen} />
