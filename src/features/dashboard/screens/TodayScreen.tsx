@@ -1,181 +1,182 @@
 import React from 'react';
-import { ScrollView, View, StyleSheet, Pressable } from 'react-native';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import {
   Dumbbell,
   Utensils,
   ChartNoAxesColumn,
-  ArrowUpRight,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react-native';
 
+import { Screen } from '../../../components/layout/Screen';
 import { AppText } from '../../../components/ui/AppText';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppCard } from '../../../components/ui/AppCard';
+import { QuickActionCard } from '../components/QuickActionCard';
+
+import { MainTabParamList } from '../../../app/navigation/types';
 import { colors, spacing, radius } from '../../../theme';
 
-export function TodayScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
+type Props = BottomTabScreenProps<MainTabParamList, 'Today'>;
 
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return 'Good morning.';
+  if (hour < 17) return 'Good afternoon.';
+  return 'Good evening.';
+}
+
+export function TodayScreen({ navigation }: Props) {
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      style={styles.root}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + spacing.xl },
-      ]}
-    >
+    <Screen scroll>
       <View style={styles.header}>
         <AppText variant="caption" weight="700" color={colors.textSecondary}>
           YOUR FITNESS SPACE
         </AppText>
 
-        <AppText
-          variant="heading"
-          weight="700"
-          style={{ marginTop: spacing.xs }}
-        >
-          Good morning.
+        <AppText variant="heading" weight="700" style={styles.greeting}>
+          {getGreeting()}
         </AppText>
 
-        <AppText color={colors.textSecondary}>Let's make today count.</AppText>
+        <AppText color={colors.textSecondary}>
+          Stronger every day, at your own pace.
+        </AppText>
       </View>
 
-      <View style={styles.workoutCard}>
-        <View style={styles.cardTop}>
-          <AppText variant="caption" weight="700" color={colors.accent}>
-            TODAY'S SESSION
-          </AppText>
+      <View style={styles.hero}>
+        <View style={styles.heroTop}>
+          <View style={styles.heroIcon}>
+            <Dumbbell color={colors.accent} size={24} />
+          </View>
 
-          <Dumbbell color={colors.accent} size={24} />
+          <AppText variant="caption" weight="700" color={colors.accent}>
+            TRAINING
+          </AppText>
         </View>
 
         <AppText
           variant="title"
           weight="700"
           color={colors.textInverse}
-          style={{ marginTop: spacing.xl }}
+          style={styles.heroTitle}
         >
-          Upper Body Strength
+          Ready for your next session?
         </AppText>
+
+        <AppText variant="small" color="#D3DDD5" style={styles.heroDescription}>
+          Find a movement, build your routine, and start training with
+          confidence.
+        </AppText>
+
+        <AppButton
+          title="Explore workouts"
+          variant="secondary"
+          style={styles.heroButton}
+          onPress={() => navigation.navigate('Train')}
+        />
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <AppText variant="title" weight="700">
+          Your fitness space
+        </AppText>
+
+        <ChevronRight size={20} color={colors.textSecondary} />
+      </View>
+
+      <View style={styles.quickActions}>
+        <QuickActionCard
+          title="Nutrition"
+          subtitle="Track your meals"
+          icon={Utensils}
+          onPress={() => navigation.navigate('Nutrition')}
+        />
+
+        <QuickActionCard
+          title="Progress"
+          subtitle="See your growth"
+          icon={ChartNoAxesColumn}
+          onPress={() => navigation.navigate('Progress')}
+        />
+      </View>
+
+      <AppCard style={styles.messageCard}>
+        <View style={styles.messageHeader}>
+          <Sparkles size={20} color={colors.primary} />
+
+          <AppText weight="700">Built around your goals</AppText>
+        </View>
 
         <AppText
           variant="small"
-          color="#C8D4CC"
-          style={{ marginTop: spacing.xs }}
+          color={colors.textSecondary}
+          style={styles.message}
         >
-          6 exercises · 45 min · Intermediate
+          Your workout plans, nutrition and progress will come together in one
+          simple place.
         </AppText>
-
-        <View style={{ marginTop: spacing.xl }}>
-          <AppButton
-            title="Start workout"
-            variant="secondary"
-            onPress={() => navigation.navigate('Train')}
-          />
-        </View>
-      </View>
-
-      <AppText variant="title" weight="700" style={{ marginTop: spacing.xxxl }}>
-        Your everyday fitness
-      </AppText>
-
-      <View style={styles.cardRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go to Nutrition"
-          style={styles.half}
-          onPress={() => navigation.navigate('Nutrition')}
-        >
-          <AppCard>
-            <Utensils color={colors.primary} size={24} />
-
-            <AppText
-              variant="caption"
-              color={colors.textSecondary}
-              style={{ marginTop: spacing.xl }}
-            >
-              NUTRITION
-            </AppText>
-
-            <AppText weight="700">Log a meal</AppText>
-          </AppCard>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go to Progress"
-          style={styles.half}
-          onPress={() => navigation.navigate('Progress')}
-        >
-          <AppCard>
-            <ChartNoAxesColumn color={colors.primary} size={24} />
-
-            <AppText
-              variant="caption"
-              color={colors.textSecondary}
-              style={{ marginTop: spacing.xl }}
-            >
-              PROGRESS
-            </AppText>
-
-            <AppText weight="700">View trends</AppText>
-          </AppCard>
-        </Pressable>
-      </View>
-
-      <AppCard style={{ marginTop: spacing.xl }}>
-        <View style={styles.cardTop}>
-          <View style={{ flex: 1 }}>
-            <AppText variant="title" weight="700">
-              Made for your pace.
-            </AppText>
-
-            <AppText
-              variant="small"
-              color={colors.textSecondary}
-              style={{ marginTop: spacing.xs }}
-            >
-              No pressure. Just progress, one session at a time.
-            </AppText>
-          </View>
-
-          <ArrowUpRight color={colors.primary} size={24} />
-        </View>
       </AppCard>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-  },
   header: {
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxl,
   },
-  workoutCard: {
+  greeting: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  hero: {
     backgroundColor: colors.primary,
     borderRadius: radius.xl,
     padding: spacing.xl,
   },
-  cardTop: {
+  heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cardRow: {
+  heroIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.09)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    marginTop: spacing.xxl,
+  },
+  heroDescription: {
+    marginTop: spacing.sm,
+  },
+  heroButton: {
+    marginTop: spacing.xxl,
+  },
+  sectionHeader: {
+    marginTop: spacing.xxxl,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quickActions: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginTop: spacing.lg,
   },
-  half: {
-    flex: 1,
+  messageCard: {
+    marginTop: spacing.xl,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  message: {
+    marginTop: spacing.sm,
   },
 });

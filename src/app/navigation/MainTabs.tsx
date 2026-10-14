@@ -64,11 +64,10 @@ export function MainTabs() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
-          paddingTop: 7,
-          paddingBottom: 7,
         },
-
+        tabBarItemStyle: {
+          minHeight: 48,
+        },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
